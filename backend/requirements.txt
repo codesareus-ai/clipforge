@@ -19,3 +19,6 @@ pillow==10.4.0
 mediapipe==0.10.14
 celery==5.4.0
 redis==5.0.8
+# Bundled static ffmpeg so the render path works with no system install
+# (auto-detected by app.config.resolve_ffmpeg).
+imageio-ffmpeg==0.5.1

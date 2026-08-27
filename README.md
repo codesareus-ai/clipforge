@@ -50,13 +50,27 @@ honors this — public posting stays gated until your app passes audit. Also not
 Instagram Reels via Graph API is capped at 90s; YouTube Shorts auto-classifies
 vertical <3min videos. All three require 9:16.
 
+## Local render demo (real media, no APIs)
+Run the actual cut + 9:16 reframe + caption-burn pipeline against a local file
+(whisper + LLM are mocked; ffmpeg does the real work):
+
+```bash
+cd backend
+python scripts/render_local.py                 # generates a sample clip
+python scripts/render_local.py path/to/video.mp4
+# -> outputs/local_clip_0.mp4  (1080x1920 vertical, captions + branding burned in)
+```
+ffmpeg is auto-detected: system `ffmpeg` on PATH, else the bundled static
+binary from `imageio-ffmpeg` (installed automatically with the deps).
+
 ## Testing
 ```bash
 cd backend
 uv venv .venv && uv pip install -r requirements-dev.txt
-python -m pytest tests/ -q        # 9 tests: pipeline + auth
+python -m pytest tests/ -q        # 15 tests: pipeline + auth + real ffmpeg render
 ```
-CI runs the same suite on every push/PR.
+CI runs the same suite on every push/PR (render tests exercise a real ffmpeg
+binary via imageio-ffmpeg).
 
 ## What's implemented vs. needs-you
 **Done:** ingest, transcription, LLM virality ranking (OpenAI/Anthropic/Gemini),
