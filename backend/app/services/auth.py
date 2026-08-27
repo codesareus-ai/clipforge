@@ -1,22 +1,25 @@
 """Self-contained user auth (no external IdP).
 
 - POST /auth/register  -> creates a user, returns a bearer token
+- POST /auth/login     -> verifies password, returns a bearer token
 - GET  /me             -> returns the caller's user_id (proves the token)
 
-The token is an HMAC-signed value (fastapi's signed cookie serializer over
-settings.TOKEN_SECRET). No plaintext passwords are stored; we keep a simple
-handle + salted hash so the same handle cannot be registered twice. Swap this
-file for Supabase/Auth0 by replacing `get_current_user` with the provider's
-verifier — the rest of the app only depends on `get_current_user` returning a
-`user_id` string.
+Passwords are hashed with bcrypt (per-password salt + work factor), not a raw
+SHA-256. user_id is a random UUID, independent of the password, so a password
+change never alters identity. The token is an HMAC-signed value (itsdangerous)
+over the user_id. Swap this file for Supabase/Auth0 by replacing
+`get_current_user` with the provider's verifier — the rest of the app only
+depends on it returning a `user_id` string.
 """
 from __future__ import annotations
 
 import hashlib
 import sqlite3
+import uuid
 from pathlib import Path
 
-from fastapi import Depends, HTTPException, Request
+import bcrypt
+from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 from pydantic import BaseModel
@@ -41,8 +44,15 @@ def _conn() -> sqlite3.Connection:
     return c
 
 
-def _hash(pw: str) -> str:
-    return hashlib.sha256(pw.encode()).hexdigest()
+def _hash_password(pw: str) -> str:
+    return bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).decode()
+
+
+def _verify_password(pw: str, pw_hash: str) -> bool:
+    try:
+        return bcrypt.checkpw(pw.encode(), pw_hash.encode())
+    except ValueError:
+        return False
 
 
 def _signer() -> URLSafeTimedSerializer:
@@ -63,16 +73,26 @@ def verify_token(token: str) -> str | None:
 
 
 def register_user(handle: str, password: str) -> str:
-    user_id = hashlib.sha256(f"{handle}:{password}".encode()).hexdigest()[:16]
+    user_id = uuid.uuid4().hex
     with _conn() as c:
         try:
             c.execute(
                 "INSERT INTO users(user_id, handle, pw_hash) VALUES (?, ?, ?)",
-                (user_id, handle, _hash(password)),
+                (user_id, handle, _hash_password(password)),
             )
         except sqlite3.IntegrityError:
             raise HTTPException(status_code=409, detail="handle already registered")
     return issue_token(user_id)
+
+
+def authenticate(handle: str, password: str) -> str:
+    with _conn() as c:
+        row = c.execute(
+            "SELECT user_id, pw_hash FROM users WHERE handle=?", (handle,)
+        ).fetchone()
+    if not row or not _verify_password(password, row[1]):
+        raise HTTPException(status_code=401, detail="invalid handle or password")
+    return issue_token(row[0])
 
 
 def get_current_user(
@@ -87,5 +107,10 @@ def get_current_user(
 
 
 class RegisterReq(BaseModel):
+    handle: str
+    password: str
+
+
+class LoginReq(BaseModel):
     handle: str
     password: str

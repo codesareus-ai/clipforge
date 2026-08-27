@@ -31,10 +31,16 @@ def _conn() -> sqlite3.Connection:
     c.execute(
         """CREATE TABLE IF NOT EXISTS jobs (
             job_id TEXT PRIMARY KEY,
+            user_id TEXT,
             state  TEXT,
-            data   TEXT
+            data   TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(user_id)
         )"""
     )
+    # Migrate older schemas that predate the user_id column.
+    cols = {r[1] for r in c.execute("PRAGMA table_info(jobs)")}
+    if "user_id" not in cols:
+        c.execute("ALTER TABLE jobs ADD COLUMN user_id TEXT")
     return c
 
 
@@ -55,8 +61,8 @@ class JobStore:
         d = job.model_dump()
         with _conn() as c:
             c.execute(
-                "REPLACE INTO jobs(job_id, state, data) VALUES (?, ?, ?)",
-                (job_id, job.state, json.dumps(d)),
+                "REPLACE INTO jobs(job_id, user_id, state, data) VALUES (?, ?, ?, ?)",
+                (job_id, job.user_id, job.state, json.dumps(d)),
             )
 
     def __getitem__(self, job_id: str) -> JobStatus:
