@@ -23,6 +23,14 @@ def isolated_db():
     yield
 
 
+@pytest.fixture(autouse=True)
+def token_secret():
+    # register/login issue signed tokens, which need TOKEN_SECRET.
+    auth_mod.settings.TOKEN_SECRET = "test-secret-for-auth-tests"
+    yield
+    auth_mod.settings.TOKEN_SECRET = None
+
+
 def test_register_then_login():
     handle, pw = "alice", "sup3rsecret"
     tok = register_user(handle, pw)
