@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.pyc
+downloads/
+outputs/
+vault.db
+clipforge.db
+.env
+
+# Node
+node_modules/
+.next/

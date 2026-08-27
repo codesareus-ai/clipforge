@@ -1,0 +1,7 @@
+# Light deps needed to import the app and run the test suite (mocks heavy deps).
+pytest==8.3.2
+pydantic==2.9.2
+pydantic-settings==2.5.2
+fastapi==0.115.0
+cryptography==43.0.1
+requests==2.32.3
