@@ -1,6 +1,6 @@
 import { Composition } from "remotion";
-import { CaptionedClip } from "./remotion/CaptionedClip";
-import { clipProps } from "./remotion/defaultProps";
+import { CaptionedClip } from "./CaptionedClip";
+import { clipProps } from "./defaultProps";
 
 export const RemotionRoot: React.FC = () => {
   return (
