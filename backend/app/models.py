@@ -29,6 +29,7 @@ class PublishResult(BaseModel):
 
 class JobStatus(BaseModel):
     job_id: str
+    user_id: str = "default"
     state: str  # queued | running | done | error
     moments: list[ClipMoment] = []
     publish_results: list[PublishResult] = []

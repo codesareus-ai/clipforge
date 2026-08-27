@@ -32,7 +32,7 @@ def test_pipeline_runs_with_mocks(monkeypatch):
                         lambda *a, **k: {"platform": "tiktok", "ok": True, "publish_id": "x"})
 
     job_id = "test-job"
-    jobs[job_id] = JobStatus(job_id=job_id, state="queued")
+    jobs[job_id] = JobStatus(job_id=job_id, user_id="test-user", state="queued")
     execute_pipeline(job_id, JobCreate(url="https://x", top_n=1, platforms=["tiktok"]))
 
     job = jobs[job_id]

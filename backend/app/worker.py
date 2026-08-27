@@ -14,9 +14,10 @@ def execute_pipeline(job_id: str, body) -> None:
     job = jobs.get(job_id)
     if not job:
         return
-    user_id = "default"  # TODO: resolve from session/auth once wired
+    user_id = job.user_id
     try:
         job.state = "running"
+        jobs[job_id] = job  # persist (store is now persistent, not in-memory)
         # 1. Ingest
         src = ingest.download(body.url, "downloads", live=body.live)
         # 2. Transcribe (word-level)
@@ -49,9 +50,11 @@ def execute_pipeline(job_id: str, body) -> None:
         job.moments = [ClipMoment(**m.__dict__) for m in moments]
         job.publish_results = results
         job.state = "done"
+        jobs[job_id] = job
     except Exception as e:  # noqa: BLE001
         job.state = "error"
         job.error = str(e)
+        jobs[job_id] = job
 
 
 def run_pipeline(job_id: str, body: JobCreate) -> None:
