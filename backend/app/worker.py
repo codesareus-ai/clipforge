@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from app.models import JobCreate, JobStatus, ClipMoment, PublishResult
 from app.store import jobs
-from app.services import ingest, transcribe, rank, render, reframe
+from app.services import ingest, transcribe, rank, render, reframe, keyframes
 from app.services.upload import storage, publish
+from app.config import get_settings
 
 
 def execute_pipeline(job_id: str, body) -> None:
@@ -14,6 +15,7 @@ def execute_pipeline(job_id: str, body) -> None:
     job = jobs.get(job_id)
     if not job:
         return
+    settings = get_settings()
     user_id = job.user_id
     try:
         job.state = "running"
@@ -22,8 +24,19 @@ def execute_pipeline(job_id: str, body) -> None:
         src = ingest.download(body.url, "downloads", live=body.live)
         # 2. Transcribe (word-level)
         segs = transcribe.transcribe(src)
-        # 3. Rank viral moments
+        # 3. Rank viral moments (two-signal: transcript + prosody)
         moments = rank.rank_moments(segs, top_n=body.top_n)
+        # 3b. Optional vision-LLM blend (extract keyframes, score visually)
+        if settings.USE_VISION_RANK:
+            for idx, m in enumerate(moments):
+                kf_dir = f"outputs/{job_id}_kf_{idx}"
+                kfs = keyframes.extract_keyframes(
+                    src, kf_dir, mode="uniform", count=3, start=m.start, end=m.end
+                )
+                if kfs:
+                    blended = rank.rank_moments_vision(segs, kfs, top_n=1)
+                    if blended:
+                        moments[idx] = blended[0]
         results: list[PublishResult] = []
         for idx, m in enumerate(moments):
             cut_path = render.cut(src, m.start, m.end, f"outputs/{job_id}_raw_{idx}.mp4")
