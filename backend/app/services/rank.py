@@ -95,13 +95,33 @@ def _call_llm(prompt: str) -> str:
     if settings.RANK_LLM_PROVIDER == "openai":
         from openai import OpenAI
 
-        client = OpenAI(api_key=settings.RANK_LLM_API_KEY)
-        r = client.chat.completions.create(
-            model=settings.RANK_LLM_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"},
+        client = OpenAI(
+            api_key=settings.RANK_LLM_API_KEY,
+            base_url=settings.RANK_LLM_BASE_URL or None,
         )
-        return r.choices[0].message.content or "{}"
+        # OpenRouter wants an HTTP-Referer + X-Title; harmless elsewhere.
+        extra = {}
+        if settings.RANK_LLM_BASE_URL and "openrouter" in settings.RANK_LLM_BASE_URL:
+            extra["headers"] = {
+                "HTTP-Referer": "https://clipforge.local",
+                "X-Title": "ClipForge",
+            }
+        try:
+            r = client.chat.completions.create(
+                model=settings.RANK_LLM_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"},
+                **extra,
+            )
+            return r.choices[0].message.content or "{}"
+        except Exception:
+            # Some free models reject response_format=json_object; retry without it.
+            r = client.chat.completions.create(
+                model=settings.RANK_LLM_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                **extra,
+            )
+            return r.choices[0].message.content or "{}"
     if settings.RANK_LLM_PROVIDER == "anthropic":
         r = requests.post(
             "https://api.anthropic.com/v1/messages",
