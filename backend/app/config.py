@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     # Token vault encryption (Fernet key)
     TOKEN_ENCRYPTION_KEY: str | None = None
 
+    # Auth (self-contained token signer — generate a random 32+ char string)
+    TOKEN_SECRET: str | None = None
+
     # DB + worker
     DATABASE_URL: str = "sqlite:///./clipforge.db"
     REDIS_URL: str = "redis://localhost:6379/0"
