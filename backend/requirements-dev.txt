@@ -10,3 +10,5 @@ requests==2.32.3
 boto3==1.35.0
 google-api-python-client==2.147.0
 google-auth-oauthlib==1.2.1
+# Real ffmpeg binary for the render tests (auto-detected by app.config.resolve_ffmpeg)
+imageio-ffmpeg==0.5.1

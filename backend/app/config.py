@@ -2,8 +2,25 @@
 from __future__ import annotations
 
 from functools import lru_cache
+import shutil
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def resolve_ffmpeg() -> str:
+    """Return an ffmpeg binary path.
+
+    Prefers `ffmpeg` on PATH; if absent, falls back to the static binary
+    bundled with `imageio-ffmpeg` (no system install needed). Returns the
+    literal "ffmpeg" if neither is found, so callers fail loudly.
+    """
+    if shutil.which("ffmpeg"):
+        return "ffmpeg"
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:  # pragma: no cover - optional dep
+        return "ffmpeg"
 
 
 class Settings(BaseSettings):
@@ -34,7 +51,7 @@ class Settings(BaseSettings):
 
     # Render
     REMOTION_PROJECT_DIR: str = "../frontend"
-    FFMPEG_BIN: str = "ffmpeg"
+    FFMPEG_BIN: str = resolve_ffmpeg()
     OUTPUT_DIR: str = "./outputs"
 
     # Platform OAuth (client ids/secrets ONLY — never user tokens)
