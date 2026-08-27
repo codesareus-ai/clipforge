@@ -5,7 +5,7 @@ from fastapi import BackgroundTasks, Depends, FastAPI, Query, Request
 from fastapi.responses import RedirectResponse
 
 from app.models import JobCreate, JobStatus
-from app.services.auth import RegisterReq, get_current_user, register_user
+from app.services.auth import LoginReq, RegisterReq, authenticate, get_current_user, register_user
 from app.store import jobs
 from app.worker import execute_pipeline
 from app.services.upload import oauth
@@ -21,9 +21,10 @@ def register(body: RegisterReq):
     return {"access_token": token, "token_type": "bearer"}
 
 
-@app.get("/me")
-def me(user_id: str = Depends(get_current_user)):
-    return {"user_id": user_id}
+@app.post("/auth/login")
+def login(body: LoginReq):
+    token = authenticate(body.handle, body.password)
+    return {"access_token": token, "token_type": "bearer"}
 
 
 @app.post("/jobs", response_model=JobStatus)
