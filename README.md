@@ -73,9 +73,10 @@ CI runs the same suite on every push/PR (render tests exercise a real ffmpeg
 binary via imageio-ffmpeg).
 
 ## What's implemented vs. needs-you
-**Done:** ingest, transcription, LLM virality ranking (OpenAI/Anthropic/Gemini),
-MediaPipe face-track reframe, Remotion captioned render, OAuth vault +
-refresh, publish dispatch (TikTok/IG/YouTube), auth, persistent SQLite store,
-Docker stack, CI.
+**Done:** ingest, transcription, **two-signal LLM ranking** (transcript + prosody),
+**keyframe extraction** (ffmpeg uniform + scene-cut), **optional vision-LLM moment
+scoring** (`USE_VISION_RANK`, Gemini/Claude vision over keyframes), MediaPipe
+face-track reframe, Remotion captioned render, OAuth vault + refresh, publish
+dispatch (TikTok/IG/YouTube), auth, persistent SQLite store, Docker stack, CI.
 **Needs your input:** live API credentials in `.env`; passing TikTok's audit;
 `npm install` already run (frontend compiles via `next build`).
