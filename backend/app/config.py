@@ -48,6 +48,8 @@ class Settings(BaseSettings):
     RANK_LLM_PROVIDER: str = "openai"  # openai | anthropic | gemini
     RANK_LLM_MODEL: str = "gpt-4o-mini"
     RANK_LLM_API_KEY: str | None = None
+    # Base URL for OpenAI-compatible proxies (OpenRouter, etc.). Empty = api.openai.com
+    RANK_LLM_BASE_URL: str | None = None
     USE_VISION_RANK: bool = False  # blend a vision-LLM score over extracted keyframes
 
     # Render
